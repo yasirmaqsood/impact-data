@@ -249,8 +249,9 @@ function returnToLogin() {
                                         Register here.
                                     </GLink>
                                     <span v-else data-description="registration disabled message">
-                                        Registration for this Galaxy instance is disabled. Please contact an
-                                        administrator for assistance.
+                                        You can login to this Galaxy instance with your UFZ account.
+                                        But you need the right to access the EVE cluster (since galaxy relies completely on it).
+                                        Every researcher/employee can request this right <a rel="nofollow" class="external text" href="mailto:wkdv-cluster@ufz.de?subject=%5BEVE%5D%20Account%20Request&amp;body=Dear%20EVE%20Admins%2C%0A%0APlease%20create%20a%20new%20account%20for%20ENTER_YOUR_NAME_HERE%0A%0AI%20need%20it%20to%20access%20the%20UFZ%20EVE%20cluster%0A%0AThanks%0A">with a short mail to the EVE admins</a>
                                     </span>
                                 </span>
                                 <span v-else>
