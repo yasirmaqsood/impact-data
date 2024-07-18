@@ -113,7 +113,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     )
                     time.sleep(sleep)
                     sleep *= 2
-                    if sleep > 64:
+                    if sleep > 128:
                         ajs.fail_message = "This job failed and the system timed out while trying to determine the cause of the failure."
                         break
                     slurm_state = _get_slurm_state()
