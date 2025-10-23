@@ -21176,6 +21176,8 @@ export interface components {
              * @constant
              */
             type: "boolean";
+            /** Validators */
+            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
         };
         /** TemplateVariableInteger */
         TemplateVariableInteger: {
@@ -21195,6 +21197,8 @@ export interface components {
              * @constant
              */
             type: "integer";
+            /** Validators */
+            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
         };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
@@ -21211,6 +21215,8 @@ export interface components {
              * @constant
              */
             type: "path_component";
+            /** Validators */
+            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -21230,6 +21236,32 @@ export interface components {
              * @constant
              */
             type: "string";
+            /** Validators */
+            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
+        };
+        /**
+         * TemplateVariableValidator
+         * @description Validator definition for template variables.
+         */
+        TemplateVariableValidator: {
+            /** Expression */
+            expression?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Message */
+            message: string;
+            /** Min */
+            min?: number | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "regex" | "length" | "range";
         };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {
