@@ -6,42 +6,27 @@ A step-by-step guide for deploying a production-ready [Galaxy](https://galaxypro
 
 ## Table of Contents
 
-1. [Prerequisites](#1-prerequisites)
-2. [System Packages](#2-system-packages)
-3. [PostgreSQL Database](#3-postgresql-database)
-4. [Clone Galaxy Source](#4-clone-galaxy-source)
-5. [Python Virtual Environment](#5-python-virtual-environment)
-6. [Core Configuration (`galaxy.yml`)](#6-core-configuration-galaxyyml)
-7. [Data Directories](#7-data-directories)
-8. [Tool Configuration (`tool_conf.xml`)](#8-tool-configuration-tool_confxml)
-9. [Job Configuration (`job_conf.yml`)](#9-job-configuration-job_confyml)
-10. [First Start (Manual)](#10-first-start-manual)
-11. [systemd Service](#11-systemd-service)
-12. [Reverse Proxy (Nginx + TLS)](#12-reverse-proxy-nginx--tls)
-13. [CVMFS for Reference Data (Optional)](#13-cvmfs-for-reference-data-optional)
-14. [OIDC / SSO Authentication (Optional)](#14-oidc--sso-authentication-optional)
-15. [Installing Tools from ToolShed](#15-installing-tools-from-toolshed)
-16. [Remote Job Execution with Pulsar (Optional)](#16-remote-job-execution-with-pulsar-optional)
-17. [Maintenance & Troubleshooting](#17-maintenance--troubleshooting)
+
+- [System Packages](#system-packages)
+- [PostgreSQL Database](#postgresql-database)
+- [Clone Galaxy Source](#clone-galaxy-source)
+- [Python Virtual Environment](#python-virtual-environment)
+- [Core Configuration (`galaxy.yml`)](#core-configuration-galaxyyml)
+- [Data Directories](#data-directories)
+- [Tool Configuration (`tool_conf.xml`)](#tool-configuration-tool_confxml)
+- [Job Configuration (`job_conf.yml`)](#job-configuration-job_confyml)
+- [First Start (Manual)](#first-start-manual)
+- [systemd Service](#systemd-service)
+- [CVMFS for Reference Data (Optional)](#cvmfs-for-reference-data-optional)
+- [OIDC / SSO Authentication (Optional)](#oidc--sso-authentication-optional)
+- [Installing Tools from ToolShed](#installing-tools-from-toolshed)
+- [Remote Job Execution with Pulsar (Optional)](#remote-job-execution-with-pulsar-optional)
+- [Maintenance & Troubleshooting](#maintenance--troubleshooting)
 
 ---
 
-## 1. Prerequisites
 
-| Requirement | Minimum |
-|---|---|
-| OS | Ubuntu 22.04 or 24.04 LTS (x86_64) |
-| RAM | 4 GB (8 GB+ recommended) |
-| Disk | 50 GB free (more for datasets) |
-| Python | 3.10 – 3.12 |
-| PostgreSQL | 14+ (16 recommended) |
-| Network | Outbound HTTPS for ToolShed, Conda, PyPI |
-
-You need `sudo` access for installing system packages and setting up services.
-
----
-
-## 2. System Packages
+## System Packages
 
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -63,7 +48,7 @@ These cover compilation of C extensions, database drivers, and web proxy compone
 
 ---
 
-## 3. PostgreSQL Database
+## PostgreSQL Database
 
 Galaxy uses PostgreSQL for all persistent metadata (users, histories, jobs, datasets).
 
@@ -91,29 +76,20 @@ Verify connectivity:
 psql -h localhost -U galaxy -d galaxy -c "SELECT 1;"
 ```
 
-> **Tip**: For password-free connections from your Galaxy process, create a `~/.pgpass` file:
->
-> ```
-> localhost:5432:galaxy:galaxy:CHANGE_ME_STRONG_PASSWORD
-> ```
->
-> Then `chmod 600 ~/.pgpass`.
-
 ---
 
-## 4. Clone Galaxy Source
+## Clone Galaxy Source
 
 ```bash
-cd /home/ubuntu
-git clone -b release_25.1 https://github.com/galaxyproject/galaxy.git galaxy_25.1/galaxy
-cd galaxy_25.1/galaxy
+git clone -b release_25.1 https://github.com/galaxyproject/galaxy.git
+cd galaxy/
 ```
 
 The repository includes all built-in tools, the client build system, and sample configurations.
 
 ---
 
-## 5. Python Virtual Environment
+## Python Virtual Environment
 
 Galaxy ships a helper script (`scripts/common_startup.sh`) that bootstraps a virtual environment, but you can also create one explicitly:
 
@@ -127,7 +103,7 @@ The first run of `run.sh` will automatically install Galaxy's Python dependencie
 
 ---
 
-## 6. Core Configuration (`galaxy.yml`)
+## Core Configuration (`galaxy.yml`)
 
 Copy the sample and edit:
 
@@ -181,7 +157,7 @@ gravity:
 
 | Setting | Purpose |
 |---|---|
-| `database_connection` | SQLAlchemy URI pointing to your PostgreSQL database |
+| `database_connection` | SQLAlchemy URI pointing to PostgreSQL database |
 | `file_path` | Where Galaxy stores uploaded/generated dataset files |
 | `job_working_directory` | Temporary workspace for running jobs |
 | `conda_auto_init` | Galaxy will install Miniconda on first start to resolve tool deps |
@@ -191,7 +167,7 @@ gravity:
 
 ---
 
-## 7. Data Directories
+## Data Directories
 
 Create the directories referenced in `galaxy.yml`:
 
@@ -204,7 +180,7 @@ Ensure the disk mounted at `/data` has sufficient space for datasets.
 
 ---
 
-## 8. Tool Configuration (`tool_conf.xml`)
+## Tool Configuration (`tool_conf.xml`)
 
 The default `config/tool_conf.xml.sample` includes Galaxy's built-in tools (Get Data, Text Manipulation, etc.). To use it:
 
@@ -228,7 +204,7 @@ Tools installed from the ToolShed (via the admin UI) are tracked separately in `
 
 ---
 
-## 9. Job Configuration (`job_conf.yml`)
+## Job Configuration (`job_conf.yml`)
 
 For a basic single-server setup with local execution:
 
@@ -251,14 +227,14 @@ execution:
       runner: local
 ```
 
-This tells Galaxy to run all jobs locally with 4 worker threads. See [Section 16](#16-remote-job-execution-with-pulsar-optional) for distributed execution.
+This tells Galaxy to run all jobs locally with 4 worker threads. See [Remote Job Execution with Pulsar](#remote-job-execution-with-pulsar-optional) for distributed execution.
 
 ---
 
-## 10. First Start (Manual)
+## First Start (Manual)
 
 ```bash
-cd /home/ubuntu/galaxy_25.1/galaxy
+cd /path-to-galaxy/galaxy
 ./run.sh
 ```
 
@@ -287,7 +263,7 @@ Stop with `Ctrl+C` or `./run.sh --stop-daemon` if backgrounded.
 
 ---
 
-## 11. systemd Service
+## systemd Service
 
 Create a unit file so Galaxy starts on boot and can be managed with `systemctl`:
 
@@ -301,9 +277,9 @@ After=network.target postgresql.service
 Type=oneshot
 User=ubuntu
 Group=ubuntu
-WorkingDirectory=/home/ubuntu/galaxy_25.1/galaxy
-ExecStart=/home/ubuntu/galaxy_25.1/galaxy/run.sh --daemon
-ExecStop=/home/ubuntu/galaxy_25.1/galaxy/run.sh --stop-daemon
+WorkingDirectory=path-to-galaxy
+ExecStart=path-to-galaxy/run.sh --daemon
+ExecStop=path-to-galaxy/run.sh --stop-daemon
 RemainAfterExit=yes
 TimeoutStartSec=300
 TimeoutStopSec=300
@@ -330,72 +306,8 @@ journalctl -u galaxy -f
 
 ---
 
-## 12. Reverse Proxy (Nginx + TLS)
 
-Galaxy's Gunicorn should not face the internet directly. Use Nginx as a reverse proxy with TLS termination.
-
-### Nginx site configuration
-
-```bash
-sudo tee /etc/nginx/sites-available/galaxy > /dev/null <<'EOF'
-upstream galaxy_app {
-    server 127.0.0.1:8080;
-}
-
-server {
-    listen 80;
-    server_name galaxy.yourdomain.org;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name galaxy.yourdomain.org;
-
-    ssl_certificate     /etc/letsencrypt/live/galaxy.yourdomain.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/galaxy.yourdomain.org/privkey.pem;
-
-    client_max_body_size 50G;
-
-    # TUS upload endpoint
-    location /api/upload/resumable_upload {
-        proxy_pass http://127.0.0.1:1080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Galaxy application
-    location / {
-        proxy_pass http://galaxy_app;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-EOF
-
-sudo ln -sf /etc/nginx/sites-available/galaxy /etc/nginx/sites-enabled/galaxy
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-### TLS certificate (Let's Encrypt)
-
-```bash
-sudo certbot --nginx -d galaxy.yourdomain.org
-```
-
-Certbot will automatically configure auto-renewal.
-
----
-
-## 13. CVMFS for Reference Data (Optional)
+## CVMFS for Reference Data (Optional)
 
 [CernVM-FS](https://cvmfs.readthedocs.io/) provides read-only access to Galaxy reference genomes, tool-data tables, and pre-built Singularity containers without local disk storage.
 
@@ -433,7 +345,7 @@ This gives Galaxy access to pre-indexed reference genomes (hg38, mm10, etc.) wit
 
 ---
 
-## 14. OIDC / SSO Authentication (Optional)
+## OIDC / SSO Authentication (Optional)
 
 Galaxy supports OpenID Connect for institutional single sign-on.
 
@@ -466,7 +378,7 @@ Refer to the [Galaxy OIDC docs](https://docs.galaxyproject.org/en/latest/admin/a
 
 ---
 
-## 15. Installing Tools from ToolShed
+## Installing Tools from ToolShed
 
 Once Galaxy is running and you have admin access:
 
@@ -478,7 +390,7 @@ Installed tools appear in `config/shed_tool_conf.xml` automatically and become a
 
 ---
 
-## 16. Remote Job Execution with Pulsar (Optional)
+## Remote Job Execution with Pulsar (Optional)
 
 [Pulsar](https://pulsar.readthedocs.io/) allows Galaxy to offload jobs to remote compute nodes communicating via a message queue (e.g., RabbitMQ).
 
@@ -558,7 +470,7 @@ This is a simplified overview. Refer to the [Pulsar documentation](https://pulsa
 
 ---
 
-## 17. Maintenance & Troubleshooting
+## Maintenance & Troubleshooting
 
 ### Checking logs
 
@@ -609,7 +521,7 @@ sudo systemctl restart galaxy
 ## Quick Reference — File Layout
 
 ```
-/home/ubuntu/galaxy_25.1/galaxy/
+/path-to-galaxy/galaxy/
 ├── config/
 │   ├── galaxy.yml              # Main Galaxy configuration
 │   ├── job_conf.yml            # Job routing and runners
